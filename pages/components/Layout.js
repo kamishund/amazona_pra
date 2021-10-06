@@ -1,15 +1,18 @@
-import React, { useContext } from 'react'
+import React, { useContext,useState } from 'react'
 import Head from 'next/head'
 import NextLink from "next/link"
-import { AppBar, Container, Link, Toolbar, Typography, createTheme, CssBaseline ,ThemeProvider, Switch, Badge} from '@material-ui/core'
+import { AppBar, Container, Link, Toolbar, Typography, createTheme, CssBaseline ,ThemeProvider, Switch, Badge,Button,Menu,MenuItem} from '@material-ui/core'
 import useStyles from '../../utils/styles'
 import { Store, StoreProvider } from '../../utils/Store'
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/router';
 export default function Layout({title,children,description}) {
-    
+    const router = useRouter();
     const {state,dispatch}=useContext(Store)
-    const {darkMode,cart }= state
-    console.log(darkMode);
+    const {darkMode,cart,userInfo }= state
+
+
+    
 
     const theme = createTheme({
         typography: {
@@ -40,6 +43,26 @@ export default function Layout({title,children,description}) {
         const newDarkMode = !darkMode;
         Cookies.set('darkMode', newDarkMode ? 'ON' : 'OFF');
     }
+
+    const [anchorEl, setAnchorEl] = useState(null);
+  const loginClickHandler = (e) => {
+    setAnchorEl(e.currentTarget);
+  };
+  const loginMenuCloseHandler = (e, redirect) => {
+    setAnchorEl(null);
+    if (redirect) {
+      router.push(redirect);
+    }
+  };
+  const logoutClickHandler = () => {
+    setAnchorEl(null);
+    dispatch({ type: 'USER_LOGOUT' });
+    Cookies.remove('userInfo');
+    Cookies.remove('cartItems');
+    Cookies.remove('shippinhAddress');
+    Cookies.remove('paymentMethod');
+    router.push('/');
+  };
     return (
         <div>
             <Head>
@@ -61,14 +84,56 @@ export default function Layout({title,children,description}) {
                         <NextLink href="/cart" passHref>
                         <Link>
                         {cart.cartItems.length > 0 ? (<Badge color="secondary" badgeContent={cart.cartItems.length}></Badge> ): ("Cart")}
-                        Cart
                         </Link>
                         </NextLink>
-                        <NextLink href="/login" passHref>
-                        <Link>
-                            Login
-                        </Link>
-                        </NextLink>
+                        {userInfo ? (
+                <>
+                  <Button
+                    aria-controls="simple-menu"
+                    aria-haspopup="true"
+                    onClick={loginClickHandler}
+                    className={classes.navbarButton}
+                  >
+                    {userInfo.name}
+                  </Button>
+                  <Menu
+                    id="simple-menu"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={loginMenuCloseHandler}
+                  >
+                    <MenuItem
+                      onClick={(e) => loginMenuCloseHandler(e, '/profile')}
+                    >
+                      Profile
+                    </MenuItem>
+                    <MenuItem
+                      onClick={(e) =>
+                        loginMenuCloseHandler(e, '/order-history')
+                      }
+                    >
+                      Order Hisotry
+                    </MenuItem>
+                    {userInfo.isAdmin && (
+                      <MenuItem
+                        onClick={(e) =>
+                          loginMenuCloseHandler(e, '/admin/dashboard')
+                        }
+                      >
+                        Admin Dashboard
+                      </MenuItem>
+                    )}
+                    <MenuItem onClick={logoutClickHandler}>Logout</MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <NextLink href="/login" passHref>
+                  <Link>
+                    <Typography component="span">Login</Typography>
+                  </Link>
+                </NextLink>
+              )}
                     </div>
                 </Toolbar>
             </AppBar>
